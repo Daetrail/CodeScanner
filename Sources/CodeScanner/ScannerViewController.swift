@@ -25,6 +25,8 @@ extension CodeScannerView {
         private let useViewfinderAsRectOfInterest: Bool
         private let viewfinderOverlayColor: UIColor
         private let viewfinderOverlayOpacity: CGFloat
+        private let viewfinderBlurStyle: UIBlurEffect.Style?
+        private let viewfinderBlurIntensity: CGFloat
         
         let fallbackVideoCaptureDevice = AVCaptureDevice.default(for: .video)
         
@@ -42,6 +44,8 @@ extension CodeScannerView {
             useViewfinderAsRectOfInterest: Bool = false,
             viewfinderOverlayColor: UIColor = .black,
             viewfinderOverlayOpacity: CGFloat = 0.5,
+            viewfinderBlurStyle: UIBlurEffect.Style? = nil,
+            viewfinderBlurIntensity: CGFloat = 1.0,
             parentView: CodeScannerView
         ) {
             self.parentView = parentView
@@ -49,6 +53,8 @@ extension CodeScannerView {
             self.useViewfinderAsRectOfInterest = useViewfinderAsRectOfInterest
             self.viewfinderOverlayColor = viewfinderOverlayColor
             self.viewfinderOverlayOpacity = viewfinderOverlayOpacity
+            self.viewfinderBlurStyle = viewfinderBlurStyle
+            self.viewfinderBlurIntensity = viewfinderBlurIntensity
             super.init(nibName: nil, bundle: nil)
         }
 
@@ -57,6 +63,8 @@ extension CodeScannerView {
             self.useViewfinderAsRectOfInterest = false
             self.viewfinderOverlayColor = .black
             self.viewfinderOverlayOpacity = 0.5
+            self.viewfinderBlurStyle = nil
+            self.viewfinderBlurIntensity = 1.0
             super.init(coder: coder)
         }
         
@@ -133,6 +141,16 @@ extension CodeScannerView {
             overlay.backgroundColor = .clear
             overlay.isUserInteractionEnabled = false
             return overlay
+        }()
+        
+        private lazy var blurView: UIVisualEffectView? = {
+            guard let blurStyle = viewfinderBlurStyle else { return nil }
+            let blurEffect = UIBlurEffect(style: blurStyle)
+            let visualEffectView = UIVisualEffectView(effect: blurEffect)
+            visualEffectView.translatesAutoresizingMaskIntoConstraints = false
+            visualEffectView.isUserInteractionEnabled = false
+            visualEffectView.alpha = viewfinderBlurIntensity
+            return visualEffectView
         }()
         
         private lazy var manualCaptureButton: UIButton = {
@@ -318,7 +336,18 @@ extension CodeScannerView {
         private func addViewFinder() {
             guard showViewfinder else { return }
             
-            // Add overlay first (so it's behind the viewfinder)
+            // Add blur view first if blur is enabled
+            if let blurView = blurView {
+                view.addSubview(blurView)
+                NSLayoutConstraint.activate([
+                    blurView.topAnchor.constraint(equalTo: view.topAnchor),
+                    blurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                    blurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                    blurView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                ])
+            }
+            
+            // Add overlay on top of blur (so it's behind the viewfinder)
             view.addSubview(overlayView)
             NSLayoutConstraint.activate([
                 overlayView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -364,15 +393,23 @@ extension CodeScannerView {
             fullPath.append(cutoutPath)
             fullPath.usesEvenOddFillRule = true
             
-            // Create the mask layer with custom color and opacity
+            // Create the mask layer for colored overlay
             let maskLayer = CAShapeLayer()
             maskLayer.path = fullPath.cgPath
             maskLayer.fillRule = .evenOdd
             maskLayer.fillColor = viewfinderOverlayColor.withAlphaComponent(viewfinderOverlayOpacity).cgColor
             
-            // Apply the mask
+            // Apply the mask to overlay
             overlayView.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
             overlayView.layer.addSublayer(maskLayer)
+            
+            // Apply the same mask to blur view if it exists
+            if let blurView = blurView {
+                let blurMaskLayer = CAShapeLayer()
+                blurMaskLayer.path = fullPath.cgPath
+                blurMaskLayer.fillRule = .evenOdd
+                blurView.layer.mask = blurMaskLayer
+            }
         }
 
         override public func viewDidDisappear(_ animated: Bool) {

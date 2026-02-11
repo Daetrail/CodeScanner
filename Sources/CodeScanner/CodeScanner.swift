@@ -86,6 +86,8 @@ public struct CodeScannerView: UIViewControllerRepresentable {
     public let useViewfinderAsRectOfInterest: Bool
     public let viewfinderOverlayColor: UIColor
     public let viewfinderOverlayOpacity: CGFloat
+    public let viewfinderBlurStyle: UIBlurEffect.Style?
+    public let viewfinderBlurIntensity: CGFloat
     public let requiresPhotoOutput: Bool
     public var simulatedData = ""
     public var shouldVibrateOnSuccess: Bool
@@ -106,6 +108,8 @@ public struct CodeScannerView: UIViewControllerRepresentable {
         useViewfinderAsRectOfInterest: Bool = false,
         viewfinderOverlayColor: UIColor = .black,
         viewfinderOverlayOpacity: CGFloat = 0.5,
+        viewfinderBlurStyle: UIBlurEffect.Style? = nil,
+        viewfinderBlurIntensity: CGFloat = 1.0,
         requiresPhotoOutput: Bool = true,
         simulatedData: String = "",
         shouldVibrateOnSuccess: Bool = true,
@@ -122,6 +126,8 @@ public struct CodeScannerView: UIViewControllerRepresentable {
         self.useViewfinderAsRectOfInterest = useViewfinderAsRectOfInterest
         self.viewfinderOverlayColor = viewfinderOverlayColor
         self.viewfinderOverlayOpacity = viewfinderOverlayOpacity
+        self.viewfinderBlurStyle = viewfinderBlurStyle
+        self.viewfinderBlurIntensity = viewfinderBlurIntensity
         self.requiresPhotoOutput = requiresPhotoOutput
         self.scanInterval = scanInterval
         self.zoomFactor = zoomFactor
@@ -140,6 +146,8 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             useViewfinderAsRectOfInterest: useViewfinderAsRectOfInterest,
             viewfinderOverlayColor: viewfinderOverlayColor,
             viewfinderOverlayOpacity: viewfinderOverlayOpacity,
+            viewfinderBlurStyle: viewfinderBlurStyle,
+            viewfinderBlurIntensity: viewfinderBlurIntensity,
             parentView: self
         )
     }
