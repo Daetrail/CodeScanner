@@ -119,6 +119,14 @@ extension CodeScannerView {
             return vc
         }()
         
+        private lazy var overlayView: UIView = {
+            let overlay = UIView()
+            overlay.translatesAutoresizingMaskIntoConstraints = false
+            overlay.backgroundColor = .clear
+            overlay.isUserInteractionEnabled = false
+            return overlay
+        }()
+        
         private lazy var manualCaptureButton: UIButton = {
             let button = UIButton(type: .system)
             let image = UIImage(named: "capture", in: .module, with: nil)
@@ -149,6 +157,7 @@ extension CodeScannerView {
         override public func viewWillLayoutSubviews() {
             previewLayer?.frame = view.layer.bounds
             updateRectOfInterest()
+            updateOverlayMask()
         }
 
         @objc func updateOrientation() {
@@ -301,6 +310,15 @@ extension CodeScannerView {
         private func addViewFinder() {
             guard showViewfinder else { return }
             
+            // Add overlay first (so it's behind the viewfinder)
+            view.addSubview(overlayView)
+            NSLayoutConstraint.activate([
+                overlayView.topAnchor.constraint(equalTo: view.topAnchor),
+                overlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                overlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                overlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+            
             let viewfinderVC = viewFinder
             
             viewfinderVC.willMove(toParent: self)
@@ -316,6 +334,37 @@ extension CodeScannerView {
                 viewfinderVC.view.widthAnchor.constraint(equalToConstant: desiredSize.width),
                 viewfinderVC.view.heightAnchor.constraint(equalToConstant: desiredSize.height),
             ])
+            
+            // Update the overlay mask after layout
+            view.layoutIfNeeded()
+            updateOverlayMask()
+        }
+        
+        private func updateOverlayMask() {
+            guard showViewfinder else { return }
+            
+            let viewfinderFrame = viewFinder.view.frame
+            
+            // Create a path for the entire view
+            let fullPath = UIBezierPath(rect: overlayView.bounds)
+            
+            // Create a rounded rect path for the viewfinder cutout
+            let cornerRadius: CGFloat = 20
+            let cutoutPath = UIBezierPath(roundedRect: viewfinderFrame, cornerRadius: cornerRadius)
+            
+            // Subtract the cutout from the full path
+            fullPath.append(cutoutPath)
+            fullPath.usesEvenOddFillRule = true
+            
+            // Create the mask layer
+            let maskLayer = CAShapeLayer()
+            maskLayer.path = fullPath.cgPath
+            maskLayer.fillRule = .evenOdd
+            maskLayer.fillColor = UIColor.black.withAlphaComponent(0.5).cgColor
+            
+            // Apply the mask
+            overlayView.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
+            overlayView.layer.addSublayer(maskLayer)
         }
 
         override public func viewDidDisappear(_ animated: Bool) {
