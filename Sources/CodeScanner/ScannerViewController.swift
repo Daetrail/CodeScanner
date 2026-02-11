@@ -23,6 +23,8 @@ extension CodeScannerView {
         var lastTime = Date(timeIntervalSince1970: 0)
         private let showViewfinder: Bool
         private let useViewfinderAsRectOfInterest: Bool
+        private let viewfinderOverlayColor: UIColor
+        private let viewfinderOverlayOpacity: CGFloat
         
         let fallbackVideoCaptureDevice = AVCaptureDevice.default(for: .video)
         
@@ -38,17 +40,23 @@ extension CodeScannerView {
         public init(
             showViewfinder: Bool = false,
             useViewfinderAsRectOfInterest: Bool = false,
+            viewfinderOverlayColor: UIColor = .black,
+            viewfinderOverlayOpacity: CGFloat = 0.5,
             parentView: CodeScannerView
         ) {
             self.parentView = parentView
             self.showViewfinder = showViewfinder
             self.useViewfinderAsRectOfInterest = useViewfinderAsRectOfInterest
+            self.viewfinderOverlayColor = viewfinderOverlayColor
+            self.viewfinderOverlayOpacity = viewfinderOverlayOpacity
             super.init(nibName: nil, bundle: nil)
         }
 
         required init?(coder: NSCoder) {
             self.showViewfinder = false
             self.useViewfinderAsRectOfInterest = false
+            self.viewfinderOverlayColor = .black
+            self.viewfinderOverlayOpacity = 0.5
             super.init(coder: coder)
         }
         
@@ -356,11 +364,11 @@ extension CodeScannerView {
             fullPath.append(cutoutPath)
             fullPath.usesEvenOddFillRule = true
             
-            // Create the mask layer
+            // Create the mask layer with custom color and opacity
             let maskLayer = CAShapeLayer()
             maskLayer.path = fullPath.cgPath
             maskLayer.fillRule = .evenOdd
-            maskLayer.fillColor = UIColor.black.withAlphaComponent(0.5).cgColor
+            maskLayer.fillColor = viewfinderOverlayColor.withAlphaComponent(viewfinderOverlayOpacity).cgColor
             
             // Apply the mask
             overlayView.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
