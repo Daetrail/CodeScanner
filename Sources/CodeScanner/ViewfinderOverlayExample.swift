@@ -33,11 +33,19 @@ struct ViewfinderOverlayExample: View {
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(ExampleType.allCases, id: \.self) { example in
-                        Button(example.rawValue) {
-                            selectedExample = example
-                            isPresentingScanner = true
+                        if #available(iOS 15.0, macCatalyst 15.0, *) {
+                            Button(example.rawValue) {
+                                selectedExample = example
+                                isPresentingScanner = true
+                            }
+                            .buttonStyle(.bordered)
+                        } else {
+                            Button(example.rawValue) {
+                                selectedExample = example
+                                isPresentingScanner = true
+                            }
+                            .buttonStyle(.automatic)
                         }
-                        .buttonStyle(.bordered)
                     }
                 }
                 .padding()
